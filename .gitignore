@@ -1,4 +1,26 @@
+# macOS system files
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Secrets and config
 .env
+core/settings.yaml
+core/token.json
+core/client_secret.json
+core/haiku.py
+
+
+# IDE files
+.idea/
+.vscode/
+
+# Poetry virtualenv (if not containerized)
+.venv/
+
+# Logs
+*.log
 .secrets
-.idea
-__pycache__//
