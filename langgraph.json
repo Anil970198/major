@@ -1,0 +1,14 @@
+{
+  "python_version": "3.12",
+  "dependencies": [
+    "."
+  ],
+  "graphs": {
+    "main": "./core/workflow_manager.py:graph",
+    "cron": "./scripts/schedule_jobs.py:graph"
+  },
+  "auth": {
+    "type": "langsmith",
+    "path": "./core/auth.py:auth"
+  }
+}

@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings</title>
+</head>
+<body>
+    <h1>⚙️ Email Settings</h1>
+    <p>Current Monitored Email: <strong>{{ monitored_email }}</strong></p>
+
+    <form method="POST">
+        <label>Enter Email to Monitor:</label>
+        <input type="email" name="email" required>
+        <button type="submit">Set Email</button>
+    </form>
+
+    <a href="{{ url_for('index') }}">⬅ Back</a>
+</body>
+</html>

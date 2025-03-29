@@ -1,0 +1,4 @@
+.env
+.secrets
+.idea
+__pycache__//

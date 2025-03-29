@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Assistant - Home</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <h1>📩 Email Assistant</h1>
+    <p>Currently Monitoring: <strong>{{ monitored_email }}</strong></p>
+
+    <nav>
+        <a href="{{ url_for('settings') }}">⚙️ Set Monitored Email</a>
+        <a href="{{ url_for('emails') }}">📨 Fetch & Classify Emails</a>
+        <a href="{{ url_for('send') }}">✉️ Send Email</a>
+    </nav>
+</body>
+</html>

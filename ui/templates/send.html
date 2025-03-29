@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Send Email</title>
+</head>
+<body>
+    <h1>✉️ Send Email</h1>
+    <form method="POST">
+        <label>To:</label>
+        <input type="email" name="to_email" required>
+        <br>
+        <label>Subject:</label>
+        <input type="text" name="subject" required>
+        <br>
+        <label>Message:</label>
+        <textarea name="message" required></textarea>
+        <br>
+        <button type="submit">Send</button>
+    </form>
+
+    <a href="{{ url_for('index') }}">⬅ Back</a>
+</body>
+</html>

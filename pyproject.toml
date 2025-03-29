@@ -1,0 +1,50 @@
+[tool.poetry]
+name = "major"  # Ensure this matches your project folder name
+version = "0.1.0"
+description = "An email automation agent"
+authors = ["Anil Kumar"]
+readme = "README.md"
+packages = [{ include = "core" }, { include = "ui" }, { include = "scripts" }]
+
+[tool.poetry.dependencies]
+pydantic-core = "2.32.0"
+python = "^3.12"
+flask = "^3.1.0"
+ollama = "^0.4.7"
+langgraph = "^0.3.18"
+langgraph-cli = "^0.1.77"
+langgraph-checkpoint = "^2.0.21"
+langchain = "^0.3.19"
+langchain-openai = "^0.3.6"
+google-api-python-client = "^2.161.0"
+google-auth-oauthlib = "^1.2.1"
+google-auth-httplib2 = "^0.2.0"
+langgraph-sdk = "^0.1.58"
+langsmith = "^0.3.8"
+httpx = "^0.28.1"
+pytz = "*"
+pyyaml = "*"
+python-dateutil = "^2.9.0.post0"
+python-dotenv = "^1.0.1"
+
+
+[tool.setuptools.packages.find]
+where = ["."]
+
+[tool.setuptools.package-data]
+core = ["*.txt", "*.rst"]
+ui = ["*.html", "*.css", "*.js"]
+
+[tool.poetry.group.dev.dependencies]
+ipykernel = "^6.29.4"
+pytest-asyncio = "^0.23.6"
+pytest = "^8.2.0"
+pytest-watch = "^4.2.0"
+vcrpy = "^6.0.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
