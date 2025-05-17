@@ -3,6 +3,13 @@ import json
 from flask import Flask, render_template, request, redirect, url_for, flash
 from core.email_service import set_monitored_email, fetch_emails, send_email
 from core.email_classifier import classify_email
+from core.email_rewriter import rewrite_email
+from core.ai_responder import draft_reply  # ✅ ADDED IMPORT
+from core.database import session_scope, Email
+from core.database import engine, Base
+
+# Ensure tables are created
+Base.metadata.create_all(bind=engine)
 
 app = Flask(__name__)
 app.secret_key = "supersecretkey"  # Needed for flash messages
