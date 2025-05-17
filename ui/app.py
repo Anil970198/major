@@ -89,6 +89,156 @@ def send():
 
     return render_template("send.html")
 
+@app.route("/rewrite", methods=["GET", "POST"])
+def rewrite_view():
+    draft = ""
+    tone = ""
+    rewritten = ""
+    tones = ["formal", "casual", "assertive", "friendly", "apologetic"]
+    if request.method == "POST":
+        draft = request.form.get("draft", "")
+        tone = request.form.get("tone", "")
+        if draft and tone:
+            rewritten = asyncio.run(rewrite_email(draft, tone))
+    return render_template("rewrite.html", draft=draft, tone=tone, tones=tones, rewritten=rewritten)
+
+@app.route("/delete/<int:email_id>", methods=["POST"])
+def delete_email(email_id):
+    with session_scope() as db:
+        email = db.query(Email).filter(Email.id == email_id).first()
+        if email:
+            db.delete(email)
+            db.commit()
+            flash(f"✅ Deleted email ID {email_id}", "success")
+        else:
+            flash(f"❌ Email ID {email_id} not found", "danger")
+    return redirect(url_for("emails"))
+
+# ✅ ✅ NEW ROUTE
+@app.route("/generate_draft/<int:email_id>", methods=["POST"])
+def generate_draft(email_id):
+    with session_scope() as db:
+        email = db.query(Email).filter(Email.id == email_id).first()
+        if not email:
+            flash(f"❌ Email ID {email_id} not found.", "danger")
+            return redirect(url_for("emails"))
+        if not email.snippet:
+            flash(f"⚠️ Email ID {email_id} has no snippet to summarize.", "warning")
+            return redirect(url_for("emails"))
+        try:
+            generated_draft = draft_reply(email.snippet)
+            email.draft_reply = generated_draft
+            db.commit()
+            flash(f"✅ Draft reply generated for email ID {email_id}.", "success")
+        except Exception as e:
+            flash(f"❌ Failed to generate draft: {e}", "danger")
+    return redirect(url_for("emails"))
+
+@app.route("/email/<int:email_id>")
+def email_actions(email_id):
+    with session_scope() as db:
+        email = db.query(Email).filter(Email.id == email_id).first()
+    if not email:
+        flash(f"❌ Email ID {email_id} not found.", "danger")
+        return redirect(url_for('emails'))
+    return render_template("email_actions.html", email=email)
+
+@app.route("/email/<int:email_id>/generate_draft", methods=["POST"])
+def generate_draft_action(email_id):
+    with session_scope() as db:
+        email = db.query(Email).filter(Email.id == email_id).first()
+        if not email:
+            flash(f"❌ Email ID {email_id} not found.", "danger")
+            return redirect(url_for('emails'))
+        if not email.snippet:
+            flash(f"⚠️ Email ID {email_id} has no snippet to summarize.", "warning")
+            return redirect(url_for('email_actions', email_id=email_id))
+        try:
+            generated_draft = draft_reply(email.snippet)
+            email.draft_reply = generated_draft
+            db.commit()
+            flash(f"✅ Draft generated!", "success")
+        except Exception as e:
+            flash(f"❌ Failed to generate draft: {e}", "danger")
+    return redirect(url_for('email_actions', email_id=email_id))
+
+@app.route("/email/<int:email_id>/rewrite", methods=["POST"])
+def rewrite_draft_action(email_id):
+    current_draft = request.form.get("current_draft", "")
+    tone = request.form.get("tone", "polite and professional")
+    if not current_draft:
+        flash("⚠️ No draft provided to rewrite.", "warning")
+        return redirect(url_for('email_actions', email_id=email_id))
+    try:
+        rewritten_text = asyncio.run(rewrite_email(current_draft, tone))
+        with session_scope() as db:
+            email = db.query(Email).filter(Email.id == email_id).first()
+            if email:
+                email.draft_reply = rewritten_text
+                db.commit()
+        flash(f"✅ Draft rewritten in {tone} tone!", "success")
+    except Exception as e:
+        flash(f"❌ Failed to rewrite draft: {e}", "danger")
+    return redirect(url_for('email_actions', email_id=email_id))
+
+@app.route("/email/<int:email_id>/send", methods=["POST"])
+def send_reply_action(email_id):
+    final_draft = request.form.get("final_draft", "")
+    if not final_draft:
+        flash("⚠️ Cannot send an empty reply.", "warning")
+        return redirect(url_for('email_actions', email_id=email_id))
+    with session_scope() as db:
+        email = db.query(Email).filter(Email.id == email_id).first()
+        if not email:
+            flash(f"❌ Email ID {email_id} not found.", "danger")
+            return redirect(url_for('emails'))
+        try:
+            success, message = send_email(email.from_addr, f"RE: {email.subject}", final_draft)
+            if success:
+                email.sent = True
+                db.commit()
+                flash(f"✅ Reply sent!", "success")
+            else:
+                flash(f"❌ Failed to send: {message}", "danger")
+        except Exception as e:
+            flash(f"❌ Error sending email: {e}", "danger")
+    return redirect(url_for('email_actions', email_id=email_id))
+
+
+from core.calendar_manager import send_calendar_invite
+
+@app.route("/email/<int:email_id>/schedule_meeting", methods=["POST"])
+def schedule_meeting(email_id):
+    recipient = request.form.get("recipient", "").strip()
+    title = request.form.get("title", "Meeting with Anil").strip()
+    date = request.form.get("date", "").strip()
+    start_time = request.form.get("start_time", "").strip()
+    end_time = request.form.get("end_time", "").strip()
+
+    if not all([recipient, date, start_time, end_time]):
+        flash("❌ All meeting fields are required.", "danger")
+        return redirect(url_for('email_actions', email_id=email_id))
+
+    # Convert to ISO 8601 datetime
+    try:
+        start_iso = f"{date}T{start_time}:00"
+        end_iso = f"{date}T{end_time}:00"
+
+        success = send_calendar_invite(
+            emails=[recipient],
+            title=title,
+            start_time=start_iso,
+            end_time=end_iso
+        )
+        if success:
+            flash(f"✅ Meeting invite sent to {recipient}!", "success")
+        else:
+            flash(f"❌ Failed to send meeting invite.", "danger")
+    except Exception as e:
+        flash(f"❌ Error scheduling meeting: {e}", "danger")
+
+    return redirect(url_for('email_actions', email_id=email_id))
+
 
 if __name__ == "__main__":
     app.run(debug=True)
