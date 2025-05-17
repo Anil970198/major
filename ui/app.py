@@ -65,11 +65,13 @@ def emails():
     classified_emails = []
     for email in email_list:
         email_data = {
-            "from_email": email["from_email"],
-            "subject": email["subject"],
-            "preview": email.get("summary", "No summary available."),  # ✅ Use "summary"
-            "html_content": email.get("html_content", ""),
-            "classification": email.get("classification", "unknown"),
+            "id": email.id,
+            "from_email": email.from_addr,
+            "subject": email.subject,
+            "preview": email.snippet,
+            "html_content": email.body,
+            "classification": email.triage_label,
+            "draft_reply": email.draft_reply  # ✅ ADDED THIS so Jinja can access
         }
         classified_emails.append(email_data)
 
