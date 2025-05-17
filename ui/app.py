@@ -77,6 +77,11 @@ def emails():
 
     return render_template("emails.html", emails=classified_emails)
 
+@app.route("/fetch", methods=["POST"])
+def fetch():
+    new_emails = fetch_emails()
+    flash(f"✅ Fetched {len(new_emails)} new emails.", "success")
+    return redirect(url_for("emails"))
 
 @app.route("/send", methods=["GET", "POST"])
 def send():
