@@ -251,7 +251,53 @@ def schedule_meeting(email_id):
     except Exception as e:
         flash(f"❌ Error scheduling meeting: {e}", "danger")
 
-    return redirect(url_for('email_actions', email_id=email_id))
+    return redirect(url_for("schedule_meeting_page", email_id=email_id))
+
+@app.route("/email/<int:email_id>/action")
+def route_email_action(email_id):
+    with session_scope() as db:
+        email = db.query(Email).filter(Email.id == email_id).first()
+        if not email:
+            flash("❌ Email not found.", "danger")
+            return redirect(url_for("emails"))
+
+        label = email.triage_label or "notify"
+        subtype = (email.triage_subtype or "").upper()
+
+        if label == "email":
+            if subtype in ["MEETING_INVITE", "SCHEDULE_REQUEST"]:
+                return redirect(url_for("schedule_meeting_page", email_id=email_id))
+            else:
+                return redirect(url_for("respond_to_email", email_id=email_id))
+
+        elif label == "notify":
+            # 🔜 Future: show /remind page
+            flash("ℹ️ Notification saved. No reply needed.", "info")
+            return redirect(url_for("emails"))
+
+        else:
+            flash("⚠️ This email does not require any action.", "warning")
+            return redirect(url_for("emails"))
+
+
+@app.route("/email/<int:email_id>/respond")
+def respond_to_email(email_id):
+    with session_scope() as db:
+        email = db.query(Email).filter(Email.id == email_id).first()
+    if not email:
+        flash("❌ Email not found.", "danger")
+        return redirect(url_for("emails"))
+    return render_template("email_respond.html", email=email)
+
+
+@app.route("/email/<int:email_id>/schedule")
+def schedule_meeting_page(email_id):
+    with session_scope() as db:
+        email = db.query(Email).filter(Email.id == email_id).first()
+    if not email:
+        flash("❌ Email not found.", "danger")
+        return redirect(url_for("emails"))
+    return render_template("email_schedule.html", email=email)
 
 
 if __name__ == "__main__":
