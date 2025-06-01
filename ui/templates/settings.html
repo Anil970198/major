@@ -9,10 +9,38 @@
     <h1>⚙️ Email Settings</h1>
     <p>Current Monitored Email: <strong>{{ monitored_email }}</strong></p>
 
-    <form method="POST">
-        <label>Enter Email to Monitor:</label>
-        <input type="email" name="email" required>
-        <button type="submit">Set Email</button>
+    <!-- FLASH MESSAGES -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="mb-4">
+          {% for category, message in messages %}
+            <div class="p-4 mb-2 text-sm rounded
+                        {% if category == 'success' %}bg-green-100 text-green-800 border border-green-400
+                        {% elif category == 'danger' %}bg-red-100 text-red-800 border border-red-400
+                        {% elif category == 'warning' %}bg-yellow-100 text-yellow-800 border border-yellow-400
+                        {% else %}bg-gray-100 text-gray-800 border border-gray-300{% endif %}">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <h1 class="text-3xl font-extrabold text-blue-600 text-center mb-6">⚙️ Email Settings</h1>
+
+    <p class="text-center text-gray-700 mb-6">Current Monitored Email: <strong>{{ monitored_email }}</strong></p>
+
+    <form method="POST" class="space-y-6">
+      <div>
+        <label for="email" class="block mb-2 text-sm font-medium text-gray-900">Enter Email to Monitor</label>
+        <input type="email" id="email" name="email" required
+          class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+      </div>
+
+      <button type="submit"
+        class="w-full text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center">
+        Save Email
+      </button>
     </form>
 
     <a href="{{ url_for('index') }}">⬅ Back</a>
