@@ -264,9 +264,23 @@ def route_email_action(email_id):
         label = email.triage_label or "notify"
         subtype = (email.triage_subtype or "").upper()
 
-        if label == "email":
-            if subtype in ["MEETING_INVITE", "SCHEDULE_REQUEST"]:
-                return redirect(url_for("schedule_meeting_page", email_id=email_id))
+        # Try to load metadata from draft_reply (temporary hack until LLM flow improves)
+        try:
+            if email.draft_reply and "due_time" in email.draft_reply:
+                import json
+                meta = json.loads(email.draft_reply)
+                due_time = meta.get("due_time")
+        except Exception:
+            pass
+
+        # DEADLINE / REMINDER ACTIONS
+        if subtype in ["DEADLINE_TASK", "REMINDER"]:
+            if due_time:
+                # Auto-create the reminder if metadata exists
+                dt_obj = datetime.fromisoformat(due_time.replace("Z", ""))
+                add_reminder(email_id=email.id, content=email.subject, due_time=dt_obj)
+                flash("🔔 Reminder created automatically from email metadata.")
+                return redirect(url_for("inbox"))
             else:
                 return redirect(url_for("respond_to_email", email_id=email_id))
 
