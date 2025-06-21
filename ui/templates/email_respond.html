@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>✉️ Respond to Email</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-r from-blue-100 via-white to-blue-100 min-h-screen p-6 flex justify-center">
+
+  <div class="bg-white shadow-lg rounded-lg max-w-3xl w-full p-8">
+
+    <!-- FLASH MESSAGES -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="mb-4">
+          {% for category, message in messages %}
+            <div class="p-4 mb-2 text-sm rounded
+                        {% if category == 'success' %}bg-green-100 text-green-800 border border-green-400
+                        {% elif category == 'danger' %}bg-red-100 text-red-800 border border-red-400
+                        {% elif category == 'warning' %}bg-yellow-100 text-yellow-800 border border-yellow-400
+                        {% else %}bg-gray-100 text-gray-800 border border-gray-300{% endif %}">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <!-- FROM ADDRESS -->
+    <p class="mb-2"><strong>From:</strong> {{ email.from_addr or "Unknown" }}</p>
+
+    <!-- SNIPPET -->
+    <p class="mb-2 font-semibold">Email Snippet:</p>
+    <div class="bg-gray-100 p-4 rounded mb-4 text-sm text-gray-700 whitespace-pre-wrap leading-relaxed border border-gray-300">
+      {{ email.snippet or "No snippet available." }}
+    </div>
+
+    <!-- REPLY FORM -->
+    <form method="POST" action="{{ url_for('send_reply_action', email_id=email.id) }}">
+      <p class="mb-2 font-semibold">Draft Reply:</p>
+      <textarea name="final_draft" rows="12" class="w-full p-4 border rounded mb-4 text-sm">{{ email.draft_reply or "" }}</textarea>
+
+      <div class="mb-4 flex items-center gap-2">
+        <label for="tone" class="font-medium">Select Tone:</label>
+        <select name="tone" id="tone" class="border rounded p-2">
+          <option value="formal">Formal</option>
+          <option value="casual">Casual</option>
+          <option value="assertive">Assertive</option>
+          <option value="friendly">Friendly</option>
+          <option value="apologetic">Apologetic</option>
+        </select>
+      </div>
+
+      <input type="hidden" name="current_draft" value="{{ email.draft_reply or '' }}">
+
+      <div class="flex flex-wrap justify-center gap-3">
+        <button type="submit"
+                formaction="{{ url_for('rewrite_draft_action', email_id=email.id) }}"
+                class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded">
+          ✍️ Rewrite in Selected Tone
+        </button>
+
+        <button type="submit"
+                class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded">
+          📤 Send Reply
+        </button>
+
+        <a href="{{ url_for('emails') }}"
+           class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+          🏠 Back to Inbox
+        </a>
+      </div>
+    </form>
+  </div>
+
+</body>
+</html>

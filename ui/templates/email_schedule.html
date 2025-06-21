@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>📅 Schedule Meeting</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-r from-blue-100 via-white to-blue-100 min-h-screen p-6 flex justify-center">
+
+  <div class="bg-white shadow-lg rounded-lg max-w-2xl w-full p-8">
+
+    <!-- FLASH MESSAGES -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="mb-4">
+          {% for category, message in messages %}
+            <div class="p-4 mb-2 text-sm rounded
+                        {% if category == 'success' %}bg-green-100 text-green-800 border border-green-400
+                        {% elif category == 'danger' %}bg-red-100 text-red-800 border border-red-400
+                        {% elif category == 'warning' %}bg-yellow-100 text-yellow-800 border border-yellow-400
+                        {% else %}bg-gray-100 text-gray-800 border border-gray-300{% endif %}">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <!-- HEADER -->
+    <h2 class="text-2xl font-bold text-blue-600 mb-4">📅 Schedule a Meeting</h2>
+
+    <!-- FROM ADDRESS -->
+    <p class="mb-4 text-gray-700"><strong>From:</strong> {{ email.from_addr or "Unknown" }}</p>
+
+    <!-- SCHEDULING FORM -->
+    <form method="POST" action="{{ url_for('schedule_meeting_route', email_id=email.id) }}" class="space-y-4">
+
+      <!-- Recipient -->
+      <div>
+        <label class="block font-medium mb-1">Recipient Email:</label>
+        <input type="email" name="recipient" value="{{ email.from_addr }}" class="w-full border p-2 rounded" required>
+      </div>
+
+      <!-- Date -->
+      <div>
+        <label class="block font-medium mb-1">Date:</label>
+        <input type="date" name="date" class="w-full border p-2 rounded" required>
+      </div>
+
+      <!-- Start Time -->
+      <div>
+        <label class="block font-medium mb-1">Start Time:</label>
+        <input type="time" name="start_time" class="w-full border p-2 rounded" required>
+      </div>
+
+      <!-- End Time -->
+      <div>
+        <label class="block font-medium mb-1">End Time:</label>
+        <input type="time" name="end_time" class="w-full border p-2 rounded" required>
+      </div>
+
+      <!-- Hidden Title -->
+      <input type="hidden" name="title" value="Meeting with Anil">
+
+      <!-- Submit Button -->
+      <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded">
+        📨 Send Calendar Invite
+      </button>
+    </form>
+
+    <!-- Back Link -->
+    <div class="mt-6 text-center">
+      <a href="{{ url_for('emails') }}" class="text-blue-600 hover:underline">⬅ Back to Inbox</a>
+    </div>
+
+  </div>
+</body>
+</html>
