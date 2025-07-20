@@ -23,4 +23,4 @@ COPY . .
 RUN poetry install --no-interaction --no-ansi --with dev
 
 # Run the app
-CMD ["poetry", "run", "python", "app.py"]
+CMD ["poetry", "run", "python", "ui/app.py"]

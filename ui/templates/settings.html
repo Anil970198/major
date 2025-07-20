@@ -1,13 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Settings</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>⚙️ Email Settings</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.0/flowbite.min.css" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-    <h1>⚙️ Email Settings</h1>
-    <p>Current Monitored Email: <strong>{{ monitored_email }}</strong></p>
+<body class="bg-gradient-to-r from-blue-100 via-white to-blue-100 min-h-screen flex items-center justify-center p-6">
+
+  <div class="w-full max-w-md bg-white rounded-lg shadow-lg p-8">
 
     <!-- FLASH MESSAGES -->
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -43,6 +45,10 @@
       </button>
     </form>
 
-    <a href="{{ url_for('index') }}">⬅ Back</a>
+    <div class="mt-6 text-center">
+      <a href="{{ url_for('index') }}" class="text-blue-600 hover:underline">⬅ Back to Home</a>
+    </div>
+  </div>
+
 </body>
 </html>

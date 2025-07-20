@@ -1,97 +1,110 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>📨 Recent Emails</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>📨 Recent Emails</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.0/flowbite.min.css" rel="stylesheet" />
 </head>
-<body>
-    <h1>📨 Recent Emails</h1>
-    <a href="{{ url_for('index') }}">⬅ Back</a>
 
-    {% if emails %}
-        <table border="1">
-            <tr>
-                <th>From</th>
-                <th>Subject</th>
-                <th>Classification</th>
-                <th>Actions</th>
-            </tr>
-            {% for email in emails %}
-            <tr>
-                <td>{{ email.from_email }}</td>
-                <td>{{ email.subject }}</td>
-                <td><strong>{{ email.classification }}</strong></td>
-                <td>
-                    <button onclick="openEmailModal('{{ loop.index }}')">👁 View</button>
-                </td>
-            </tr>
+<body class="bg-gradient-to-r from-blue-100 via-white to-blue-100 min-h-screen py-6 px-4">
 
-            <!-- Email Modal -->
-            <div id="email-modal-{{ loop.index }}" class="modal">
-                <div class="modal-content">
-                    <span class="close" onclick="closeEmailModal('{{ loop.index }}')">&times;</span>
-                    <h2>📩 {{ email.subject }}</h2>
-                    <p><strong>From:</strong> {{ email.from_email }}</p>
-                    <hr>
-                    <div class="email-body">
-                        <p>{{ email.preview | safe }}</p> <!-- ✅ Display summarized content -->
-                    </div>
-                </div>
+  <div class="max-w-7xl mx-auto">
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="mb-6 space-y-2">
+          {% for category, message in messages %}
+            <div class="p-4 text-sm rounded border
+              {% if category == 'success' %}
+                bg-green-100 text-green-800 border-green-300
+              {% elif category == 'danger' %}
+                bg-red-100 text-red-800 border-red-300
+              {% elif category == 'warning' %}
+                bg-yellow-100 text-yellow-800 border-yellow-300
+              {% else %}
+                bg-gray-100 text-gray-800 border-gray-300
+              {% endif %}">
+              {{ message }}
             </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <!-- Header & Actions -->
+    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+      <h1 class="text-4xl font-extrabold text-blue-600">📨 Recent Emails</h1>
+      <div class="flex flex-wrap gap-2">
+        <form action="{{ url_for('fetch') }}" method="post">
+          <button type="submit" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-medium">
+            🔄 Fetch New Emails
+          </button>
+        </form>
+        <form method="POST" action="{{ url_for('delete_all_emails') }}">
+          <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium">
+            🗑 Delete All Emails
+          </button>
+        </form>
+        <a href="{{ url_for('index') }}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium">
+          ⬅ Back
+        </a>
+        <a href="{{ url_for('dashboard') }}" class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg font-medium">
+          📊 Dashboard
+        </a>
+      </div>
+    </div>
+
+    <!-- Email Table -->
+    {% if emails %}
+      <div class="overflow-x-auto bg-white rounded-lg shadow-md">
+        <table class="w-full text-sm text-left text-gray-700">
+          <thead class="text-xs uppercase bg-blue-200 text-blue-800">
+            <tr>
+              <th class="px-6 py-3">From</th>
+              <th class="px-6 py-3">Subject</th>
+              <th class="px-6 py-3">Classification</th>
+              <th class="px-6 py-3">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for email in emails %}
+              <tr class="border-b hover:bg-blue-100">
+                <td class="px-6 py-4">{{ email.from_email }}</td>
+                <td class="px-6 py-4">{{ email.subject }}</td>
+                <td class="px-6 py-4 font-semibold">
+                  {{ email.triage_label or email.classification }}
+                  {% if email.triage_subtype %}
+                    <div class="text-xs text-gray-500">{{ email.triage_subtype }}</div>
+                  {% endif %}
+                </td>
+                <td class="px-6 py-4">
+                  <div class="flex flex-wrap gap-2">
+                    <a href="{{ url_for('route_email_action', email_id=email.id) }}"
+                       class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 text-sm rounded-lg font-medium">
+                      👁 Open
+                    </a>
+                    <form action="{{ url_for('delete_email', email_id=email.id) }}"
+                          method="post"
+                          onsubmit="return confirm('Are you sure you want to delete this email?');">
+                      <button type="submit"
+                              class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 text-sm rounded-lg font-medium">
+                        🗑 Delete
+                      </button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
             {% endfor %}
+          </tbody>
         </table>
+      </div>
     {% else %}
-        <p>No emails found.</p>
+      <p class="text-center text-gray-600 mt-8 text-lg">No emails found.</p>
     {% endif %}
 
-    <script>
-        function openEmailModal(index) {
-            document.getElementById('email-modal-' + index).style.display = 'block';
-        }
-
-        function closeEmailModal(index) {
-            document.getElementById('email-modal-' + index).style.display = 'none';
-        }
-    </script>
-
-    <style>
-        /* Modal styles */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0,0,0,0.4);
-            padding-top: 60px;
-        }
-
-        .modal-content {
-            background-color: white;
-            margin: auto;
-            padding: 20px;
-            border: 1px solid #888;
-            width: 80%;
-            max-width: 800px;
-        }
-
-        .close {
-            color: #aaa;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-        }
-
-        .close:hover, .close:focus {
-            color: black;
-            text-decoration: none;
-            cursor: pointer;
-        }
-    </style>
+  </div>
 </body>
 </html>

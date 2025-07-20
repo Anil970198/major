@@ -8,6 +8,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from email.mime.text import MIMEText
 import ollama  # Local LLM models (Mistral for summarization, LLaMA for classification)
+from langchain_groq import ChatGroq
 
 # 🔧 Constants for storage
 SECRETS_DIR = os.path.join(os.path.dirname(__file__), "../.secrets")
@@ -15,11 +16,24 @@ SECRETS_FILE = os.path.join(SECRETS_DIR, "client_secret.json")
 TOKEN_FILE = os.path.join(SECRETS_DIR, "token.json")
 SETTINGS_FILE = os.path.join(SECRETS_DIR, "settings.json")
 
-SCOPES = ["https://www.googleapis.com/auth/gmail.modify"]
+SCOPES = [
+    "https://www.googleapis.com/auth/gmail.modify",
+    "https://www.googleapis.com/auth/calendar",
+]
 
 # 🔧 Ollama client config
-OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://host.docker.internal:11434")
-ollama_client = ollama.Client(host=OLLAMA_BASE_URL)
+summarizer_llm = ChatGroq(
+    api_key=os.getenv("GROQ_API_KEY"),
+    model_name="llama-3.3-70b-versatile",  # 🧠 High-context summarizer
+    temperature=0.3,
+    max_tokens=32768
+)
+
+
+classifier_llm = ChatGroq(
+    api_key=os.getenv("GROQ_API_KEY"),
+    model_name=os.getenv("CLASSIFIER_MODEL", "llama-3.1-8b-instant")
+)
 
 def load_settings():
     if os.path.exists(SETTINGS_FILE):
@@ -68,56 +82,115 @@ def summarize_email_content(html_content):
         return "No content available."
 
     prompt = f"""
-    You are an AI email assistant that summarizes emails into clear, structured points.
-    - Extract key details.
-    - Ignore styling, CSS, and ads.
-    - Preserve essential links.
-    - Convert tables/lists into bullet points.
+    You are an AI email assistant.
+
+    📌 Your job is to **summarize the ENTIRE email content** into clear, structured, and useful bullet points for the user.
+
+    🔒 HARD LIMITS:
+    - The summary must fit **within 32,768 tokens maximum.**
+    - Be concise but do not skip important content.
+    - The full email content must be **made understandable** within this limit.
+    - Do NOT allow cutoffs. Ensure it feels complete.
+
+    📋 Guidelines:
+    - Highlight main points, requests, links, meeting details, deadlines, or questions.
+    - Ignore CSS, headers, footers, legal disclaimers, and promotional content.
+    - Preserve structure (bullets, numbered points, section headers).
+    - Group similar content together.
+    - Minimum 5, ideally 7–10 distinct bullet points.
 
     Email Content:
     {html_content}
 
-    Provide a structured summary in bullet points:
-    """
+    ---
 
+    Return only the summary as clean, readable bullet points.
+    """
     try:
-        response = ollama_client.chat(model="mistral", messages=[{"role": "user", "content": prompt}])
-        return response["message"]["content"].strip()
+        response = summarizer_llm.invoke([{"role": "user", "content": prompt}])
+        return response.content.strip()
     except Exception as e:
         print(f"❌ Mistral Summarization Error: {e}")
         return "Error summarizing email content."
 
+
 def classify_email_with_llama3(summarized_content):
-    settings = load_settings()
-
-    triage_no = settings.get("triage_no", [])
-    triage_email = settings.get("triage_email", [])
-    triage_notify = settings.get("triage_notify", [])
-
     if not summarized_content:
-        return "unknown"
+        return {"label": "notify", "subtype": "UPCOMING_EVENT"}
 
     prompt = f"""
-    You are an AI email assistant that classifies emails based on their content.
-    - **"no"** → Spam, Promotions, Social Media (triage_no)
-    - **"email"** → Client requests, Meeting invites, Schedule requests (triage_email)
-    - **"notify"** → Results, Upcoming events, Alerts (triage_notify)
+You are a highly accurate AI email triage assistant. Your job is to:
 
-    Use ONLY the labels: "no", "email", or "notify".
+1. Determine if the email requires a reply, is just a notification, or should be ignored.
+2. Pick the appropriate subtype from a fixed list.
+3. Detect any clear deadlines, due dates, or times — and return them in ISO format if found.
+4. Respond ONLY in valid JSON.
 
-    Email Summary:
-    {summarized_content}
+---
 
-    Output ONLY the classification label:
-    """
+Your response must strictly follow this format:
+{{
+  "label": "email" | "notify" | "no",
+  "subtype": "<see subtype options>",
+  "due_time": "YYYY-MM-DDTHH:MM:SSZ"  // only if a clear deadline is found
+}}
+
+---
+
+Subtype values:
+email:
+- INFO_REQUEST
+- QUOTE_PROPOSAL
+- SUPPORT_ISSUE
+- FEEDBACK_COMPLAINT
+- MEETING_INVITE
+- SCHEDULE_REQUEST
+- DEADLINE_TASK
+
+notify:
+- RESULT
+- UPCOMING_EVENT
+- ALERT
+
+no:
+- SPAM
+- PROMOTION
+- SOCIAL
+
+---
+
+Summarized Email:
+\"\"\"
+{summarized_content}
+\"\"\"
+
+Final JSON:
+"""
 
     try:
-        response = ollama_client.chat(model="llama3.2", messages=[{"role": "user", "content": prompt}])
-        classification = response["message"]["content"].strip().lower()
-        return classification if classification in ["no", "email", "notify"] else "email"
+        response = classifier_llm.invoke([{"role": "user", "content": prompt}])
+        raw = response.content.strip()
+
+        match = re.search(r"\{.*?\}", raw, re.DOTALL)
+        if match:
+            data = json.loads(match.group(0))
+            return {
+                "label": data.get("label", "notify").lower(),
+                "subtype": data.get("subtype", "UPCOMING_EVENT").upper(),
+                "due_time": data.get("due_time")
+            }
+        else:
+            return {"label": "notify", "subtype": "UPCOMING_EVENT", "due_time": None}
+
     except Exception as e:
         print(f"❌ LLaMA Classification Error: {e}")
-        return "email"
+        return {"label": "notify", "subtype": "UPCOMING_EVENT", "due_time": None}
+
+
+
+from core.database import Email, session_scope  # 🔥 Import at the top of the file
+
+from core.database import Email, session_scope  # already imported
 
 def fetch_emails():
     creds = get_credentials()
@@ -128,7 +201,7 @@ def fetch_emails():
         return []
 
     try:
-        results = service.users().messages().list(userId="me", labelIds=["INBOX"], maxResults=5).execute()
+        results = service.users().messages().list(userId="me", labelIds=["INBOX"], maxResults=20).execute()
         messages = results.get("messages", [])
 
         email_list = []
@@ -136,8 +209,7 @@ def fetch_emails():
             msg_data = service.users().messages().get(userId="me", id=msg["id"]).execute()
             headers = msg_data.get("payload", {}).get("headers", [])
 
-            from_field = next((h["value"] for h in headers if h["name"].lower() in ["from", "reply-to", "sender"]),
-                              "Unknown Sender")
+            from_field = next((h["value"] for h in headers if h["name"].lower() in ["from", "reply-to", "sender"]), "Unknown Sender")
             sender = extract_email_address(from_field)
             subject = next((h["value"] for h in headers if h["name"].lower() == "subject"), "No Subject")
 
@@ -161,14 +233,38 @@ def fetch_emails():
             if not html_body and text_body:
                 html_body = f"<p>{text_body}</p>"
 
-            # 🔥 Summarize + classify
             summarized_content = summarize_email_content(html_body)
-            classification = classify_email_with_llama3(summarized_content)
+            triage_data = classify_email_with_llama3(summarized_content)
+            label = triage_data["label"]
+            subtype = triage_data["subtype"]
+
+            # ✅ INSERT INTO DATABASE (skip if already exists)
+            with session_scope() as db:
+                exists = db.query(Email).filter_by(gmail_id=msg["id"]).first()
+                if not exists:
+                    email_record = Email(
+                        gmail_id=msg["id"],
+                        from_addr=sender,
+                        to_addr=monitored_email,
+                        subject=subject,
+                        snippet=summarized_content[:150],
+                        body=html_body,
+                        triage_label=label,
+                        triage_subtype=subtype,
+                        draft_reply=json.dumps({"due_time": triage_data.get("due_time")}) if triage_data.get(
+                            "due_time") else None
+                    )
+
+                    db.add(email_record)
+                    print(f"✅ Inserted email '{subject}'")
+                else:
+                    print(f"⚠️ Email '{subject}' already in DB → skipping")
 
             email_list.append({
                 "from_email": sender,
                 "subject": subject,
-                "classification": classification,
+                "classification": label,
+                "subtype": subtype,
                 "summary": summarized_content,
                 "html_content": html_body,
             })
@@ -178,6 +274,7 @@ def fetch_emails():
     except Exception as e:
         print(f"❌ Error fetching emails: {e}")
         return []
+
 
 def send_email(to_email, subject, message_text):
     service = get_gmail_service()

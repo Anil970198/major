@@ -1,19 +1,58 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Email Assistant - Home</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inbox Agent - Home</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.0/flowbite.min.css" rel="stylesheet" />
+  <script src="https://unpkg.com/@tabler/icons-webfont"></script>
 </head>
-<body>
-    <h1>📩 Email Assistant</h1>
-    <p>Currently Monitoring: <strong>{{ monitored_email }}</strong></p>
 
-    <nav>
-        <a href="{{ url_for('settings') }}">⚙️ Set Monitored Email</a>
-        <a href="{{ url_for('emails') }}">📨 Fetch & Classify Emails</a>
-        <a href="{{ url_for('send') }}">✉️ Send Email</a>
-    </nav>
+<body class="bg-gradient-to-r from-blue-100 via-white to-blue-100 min-h-screen flex flex-col">
+
+  <!-- Navbar -->
+  <nav class="bg-white shadow-md p-4">
+    <div class="container mx-auto flex justify-between items-center">
+      <h1 class="text-2xl font-bold text-blue-600 flex items-center gap-2">
+        📩 Inbox Agent
+      </h1>
+      <span class="text-gray-600 font-medium">Monitoring: <strong>{{ monitored_email }}</strong></span>
+    </div>
+  </nav>
+
+  <!-- Main Section -->
+  <main class="flex-grow flex items-center justify-center p-8">
+    <div class="grid gap-8 sm:grid-cols-1 md:grid-cols-3 max-w-6xl w-full">
+
+      <!-- Settings -->
+      <a href="{{ url_for('settings') }}"
+         class="bg-white shadow-lg rounded-xl p-6 hover:bg-blue-100 transition duration-300 border border-gray-200">
+        <div class="flex flex-col items-center text-center space-y-4">
+          <span class="text-4xl">⚙️</span>
+          <h2 class="text-xl font-semibold text-gray-800">Set Monitored Email</h2>
+        </div>
+      </a>
+
+      <!-- Fetch Emails -->
+      <a href="{{ url_for('emails') }}"
+         class="bg-white shadow-lg rounded-xl p-6 hover:bg-blue-100 transition duration-300 border border-gray-200">
+        <div class="flex flex-col items-center text-center space-y-4">
+          <span class="text-4xl">📨</span>
+          <h2 class="text-xl font-semibold text-gray-800">Fetch & Classify Emails</h2>
+        </div>
+      </a>
+
+      <!-- Send Email -->
+      <a href="{{ url_for('send') }}"
+         class="bg-white shadow-lg rounded-xl p-6 hover:bg-blue-100 transition duration-300 border border-gray-200">
+        <div class="flex flex-col items-center text-center space-y-4">
+          <span class="text-4xl">✉️</span>
+          <h2 class="text-xl font-semibold text-gray-800">Send Email</h2>
+        </div>
+      </a>
+
+    </div>
+  </main>
 </body>
 </html>

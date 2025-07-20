@@ -26,6 +26,7 @@ pytz = "*"
 pyyaml = "*"
 python-dateutil = "^2.9.0.post0"
 python-dotenv = "^1.0.1"
+markdown = "^3.8"
 
 
 [tool.setuptools.packages.find]

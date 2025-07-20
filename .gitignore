@@ -5,6 +5,7 @@
 __pycache__/
 *.pyc
 *.pyo
+.venv
 
 # Secrets and config
 .env
@@ -24,3 +25,5 @@ core/haiku.py
 # Logs
 *.log
 .secrets
+.DS_Store
+__pycache__/

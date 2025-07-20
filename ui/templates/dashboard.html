@@ -1,10 +1,91 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+  <meta charset="UTF-8" />
+  <title>📋 My Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-$END$
+
+<body class="bg-gradient-to-br from-gray-50 to-gray-200 min-h-screen p-6">
+  <div class="max-w-6xl mx-auto bg-white shadow-2xl rounded-xl p-8">
+
+    <!-- Title -->
+    <h2 class="text-4xl font-bold text-gray-800 mb-10 border-b pb-2">📋 My Dashboard</h2>
+
+    <!-- Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+
+      <!-- Scheduled Meetings -->
+      <div class="bg-white border rounded-lg shadow p-6">
+        <h3 class="text-2xl font-semibold text-purple-700 mb-4">🗓 Scheduled Meetings</h3>
+        {% if meetings %}
+          <ul class="space-y-4">
+            {% for m in meetings %}
+              <li class="flex items-start gap-3">
+                <form method="POST" action="{{ url_for('toggle_meeting') }}">
+                  <input type="hidden" name="done_id" value="{{ m.id }}">
+                  <input type="hidden" name="email_id" value="{{ m.email_id }}">
+                  <input type="checkbox"
+                         class="rounded border-gray-400 w-5 h-5 mt-1"
+                         onchange="this.form.submit()"
+                         {% if m.id in done_meeting_ids %}checked{% endif %}>
+                </form>
+                <div class="{% if m.id in done_meeting_ids %} line-through opacity-60 {% endif %}">
+                  <p class="font-medium text-lg">{{ m.title }}</p>
+                  <p class="text-sm text-gray-500">{{ m.start_time }} → {{ m.end_time }}</p>
+                  {% if m.calendar_url %}
+                    <a href="{{ m.calendar_url }}" target="_blank"
+                       class="text-sm text-blue-600 hover:underline">📅 View on Google Calendar</a><br>
+                  {% endif %}
+                  <a href="{{ url_for('schedule_meeting_page', email_id=m.email_id) }}"
+                     class="text-sm text-gray-600 hover:underline">🔗 Go to Email {{ m.email_id }}</a>
+                </div>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="text-gray-400">No scheduled meetings.</p>
+        {% endif %}
+      </div>
+
+      <!-- Reminders -->
+      <div class="bg-white border rounded-lg shadow p-6">
+        <h3 class="text-2xl font-semibold text-red-700 mb-4">🔔 Active Reminders</h3>
+        {% if reminders %}
+          <ul class="space-y-4">
+            {% for r in reminders %}
+              <li class="flex items-start gap-3">
+                <form method="POST" action="{{ url_for('toggle_reminder') }}">
+                  <input type="hidden" name="done_id" value="{{ r.id }}">
+                  <input type="checkbox"
+                         class="rounded border-gray-400 w-5 h-5 mt-1"
+                         onchange="this.form.submit()"
+                         {% if r.id in done_ids %}checked{% endif %}>
+                </form>
+                <div class="{% if r.id in done_ids %} line-through opacity-60 {% endif %}">
+                  <p class="font-medium text-lg">{{ r.content }}</p>
+                  <p class="text-sm text-gray-500">{{ r.due_time }}</p>
+                  <a href="{{ url_for('create_reminder', email_id=r.email_id) }}"
+                     class="text-sm text-gray-600 hover:underline">🔗 Go to Email {{ r.email_id }}</a>
+                </div>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="text-gray-400">No reminders yet.</p>
+        {% endif %}
+      </div>
+
+    </div>
+
+    <!-- Back to Inbox -->
+    <div class="mt-10 text-center">
+      <a href="{{ url_for('emails') }}"
+         class="inline-block bg-blue-600 text-white px-6 py-2 rounded shadow hover:bg-blue-700 transition">
+        ⬅ Back to Inbox
+      </a>
+    </div>
+
+  </div>
 </body>
 </html>
